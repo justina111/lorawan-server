@@ -1,0 +1,24 @@
+#!/bin/sh
+SCRIPT=$(readlink $0 || true)
+if [ -z $SCRIPT ]; then
+    SCRIPT=$0
+fi
+SCRIPT_DIR="$(cd `dirname "$SCRIPT"` && pwd -P)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+if [ -z $LORAWAN_HOME ]; then
+    LORAWAN_HOME=$ROOT_DIR
+fi
+
+__possible_sys="$ROOT_DIR/releases/{{release_version}}/sys.config"
+if [ -f "$__possible_sys" ]; then
+    SYS_CONFIG="$__possible_sys"
+elif [ -L "$__possible_sys".orig ]; then
+    mv "$__possible_sys".orig "$__possible_sys"
+    SYS_CONFIG="$__possible_sys"
+fi
+
+if [ ! -z $GOOGLE_MAPS_KEY ]; then
+    sed -i "s/GoogleMapsKey = \"[-a-zA-Z0-9]*\"/GoogleMapsKey = \"$GOOGLE_MAPS_KEY\"/g" $ROOT_DIR/lib/lorawan_server-*/priv/admin/admin-config.js
+fi
+
+cd $LORAWAN_HOME && erl -noinput +Bd -sname lorawan -pa $ROOT_DIR/lib/*/ebin -s lorawan_app -config $SYS_CONFIG $@
