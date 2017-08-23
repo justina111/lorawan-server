@@ -35,6 +35,7 @@ handle_join(Gateway, #device{app=App}=Device, Link) ->
     invoke_handler(handle_join, App, [Gateway, Device, Link]).
 
 handle_rx(Gateway, #link{app=App}=Link, RxData, RxQ) ->
+    lager:debug("lorawan_handler:handle_rx, App is ~p", [App]),
     invoke_handler(handle_rx, App, [Gateway, Link, RxData, RxQ]).
 
 encode_tx(#link{app=App}=Link, TxQ, FOpts, TxData) ->
@@ -42,6 +43,7 @@ encode_tx(#link{app=App}=Link, TxQ, FOpts, TxData) ->
 
 invoke_handler(Fun, App, Params) ->
     {ok, Modules} = application:get_env(lorawan_server, plugins),
+    lager:debug("lorawan_handler:invoke_handler, Modules is ~p", [Modules]),
     case proplists:get_value(App, Modules) of
         undefined ->
             {error, {unknown_app, App}};
@@ -54,6 +56,7 @@ invoke_handler(Fun, App, Params) ->
 invoke_handler2(Module, Fun, Params) ->
     case erlang:function_exported(Module, Fun, length(Params)) of
         true ->
+            lager:debug("lorawan_handler:invoke_handler2, Module is ~p, Fun is ~p, Params is ~p", [Module, Fun, Params]),
             apply(Module, Fun, Params);
         false ->
             lager:warning("function ~w:~w/~w not exported", [Module, Fun, length(Params)]),
